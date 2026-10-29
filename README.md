@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/alarm-tool-logo.png" width="440" alt="AlarmTool Logo">
+</p>
+
 # AlarmTool
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
