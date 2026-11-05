@@ -15,18 +15,7 @@ import java.util.List;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class CardMessage {
 
-    @JsonProperty("msg_type")
-    private String msgType = "interactive";
-
     private Card card = new Card();
-
-    public String getMsgType() {
-        return msgType;
-    }
-
-    public void setMsgType(String msgType) {
-        this.msgType = msgType;
-    }
 
     public Card getCard() {
         return card;
@@ -40,8 +29,18 @@ public class CardMessage {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class Card {
 
+        private String schema = "2.0";
+
         private Header header;
         private Body body;
+
+        public String getSchema() {
+            return schema;
+        }
+
+        public void setSchema(String schema) {
+            this.schema = schema;
+        }
 
         public Header getHeader() {
             return header;
@@ -133,12 +132,31 @@ public class CardMessage {
         }
     }
 
-    /** 飞书内置图标，如 alarm_outlined */
+    /** 卡片头部图标，标准图标用 token，自定义图片用 img_key */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class Icon {
 
+        private String tag = "standard_icon";
+        private String token;
+
         @JsonProperty("img_key")
         private String imgKey;
+
+        public String getTag() {
+            return tag;
+        }
+
+        public void setTag(String tag) {
+            this.tag = tag;
+        }
+
+        public String getToken() {
+            return token;
+        }
+
+        public void setToken(String token) {
+            this.token = token;
+        }
 
         public String getImgKey() {
             return imgKey;
@@ -192,10 +210,49 @@ public class CardMessage {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class Column {
 
+        private String tag = "column";
+        private String width = "weighted";
+        private Integer weight = 1;
+
+        @JsonProperty("vertical_align")
+        private String verticalAlign = "top";
+
         @JsonProperty("background_style")
         private String backgroundStyle;
 
-        private List<MarkdownElement> elements = new ArrayList<>();
+        private List<Object> elements = new ArrayList<>();
+
+        public String getTag() {
+            return tag;
+        }
+
+        public void setTag(String tag) {
+            this.tag = tag;
+        }
+
+        public String getWidth() {
+            return width;
+        }
+
+        public void setWidth(String width) {
+            this.width = width;
+        }
+
+        public Integer getWeight() {
+            return weight;
+        }
+
+        public void setWeight(Integer weight) {
+            this.weight = weight;
+        }
+
+        public String getVerticalAlign() {
+            return verticalAlign;
+        }
+
+        public void setVerticalAlign(String verticalAlign) {
+            this.verticalAlign = verticalAlign;
+        }
 
         public String getBackgroundStyle() {
             return backgroundStyle;
@@ -205,11 +262,11 @@ public class CardMessage {
             this.backgroundStyle = backgroundStyle;
         }
 
-        public List<MarkdownElement> getElements() {
+        public List<Object> getElements() {
             return elements;
         }
 
-        public void setElements(List<MarkdownElement> elements) {
+        public void setElements(List<Object> elements) {
             this.elements = elements;
         }
     }

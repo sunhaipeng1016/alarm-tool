@@ -54,7 +54,7 @@ public class FeishuCardSender implements AlarmSender {
         }
 
         String content = TemplateReplacer.replacePlaceholders(
-                objectMapper.writeValueAsString(cardMessage), values);
+                objectMapper.writeValueAsString(cardMessage.getCard()), values);
 
         CreateMessageReq req = CreateMessageReq.newBuilder()
                 .receiveIdType(receiveIdType)
@@ -83,9 +83,8 @@ public class FeishuCardSender implements AlarmSender {
 
         CardMessage.Header header = new CardMessage.Header();
         header.setTitle(new CardMessage.Title("系统异常报警通知"));
-        header.setSubtitle(new CardMessage.Title());
         header.setIcon(new CardMessage.Icon());
-        header.getIcon().setImgKey("alarm_outlined");
+        header.getIcon().setToken("alarm_outlined");
         card.setHeader(header);
 
         CardMessage.Body body = new CardMessage.Body();
@@ -102,7 +101,7 @@ public class FeishuCardSender implements AlarmSender {
         CardMessage.Column column = new CardMessage.Column();
         column.setBackgroundStyle("orange-50");
 
-        List<CardMessage.MarkdownElement> elements = new ArrayList<>();
+        List<Object> elements = new ArrayList<>();
 
         CardMessage.MarkdownElement titleElement = new CardMessage.MarkdownElement();
         titleElement.setContent("**<font color='orange'>【堆栈信息】</font>**");
@@ -121,14 +120,14 @@ public class FeishuCardSender implements AlarmSender {
         panelTitle.setContent("堆栈信息");
         panelHeader.setTitle(panelTitle);
         panelHeader.setVerticalAlign("center");
-        panelHeader.setIconExpandedAngle(-100);
+        panelHeader.setIconExpandedAngle(-180);
         panelHeader.setIconPosition("right");
 
         CardMessage.MarkdownElementIcon panelIcon = new CardMessage.MarkdownElementIcon();
         panelIcon.setTag("standard_icon");
         panelIcon.setToken("down-small-ccm_outlined");
-        panelIcon.setSize("");
-        panelIcon.setColor("16px 16px");
+        panelIcon.setColor("");
+        panelIcon.setSize("16px 16px");
         panelHeader.setIcon(panelIcon);
 
         collapsiblePanel.setHeader(panelHeader);
@@ -165,7 +164,7 @@ public class FeishuCardSender implements AlarmSender {
         CardMessage.Column column = new CardMessage.Column();
         column.setBackgroundStyle("carmine-50");
 
-        List<CardMessage.MarkdownElement> elements = new ArrayList<>();
+        List<Object> elements = new ArrayList<>();
 
         CardMessage.MarkdownElement titleElement = new CardMessage.MarkdownElement();
         titleElement.setContent("**<font color='carmine'>【自定义消息】</font>**");
@@ -189,7 +188,7 @@ public class FeishuCardSender implements AlarmSender {
         CardMessage.Column column = new CardMessage.Column();
         column.setBackgroundStyle("orange-50");
 
-        List<CardMessage.MarkdownElement> elements = new ArrayList<>();
+        List<Object> elements = new ArrayList<>();
 
         CardMessage.MarkdownElement titleElement = new CardMessage.MarkdownElement();
         titleElement.setContent("**<font color='orange'>【链路查看】</font>**");
