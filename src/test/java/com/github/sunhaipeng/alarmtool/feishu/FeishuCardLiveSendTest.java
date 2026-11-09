@@ -29,8 +29,14 @@ class FeishuCardLiveSendTest {
         FeishuCardSender sender = new FeishuCardSender(new AlarmConfig.PropertiesAlarmConfig(props));
 
         Map<String, String> values = new HashMap<>();
+        values.put("exception_type", "UmeRPCException");
+        values.put("alarm_level", "P3 一般报警");
+        values.put("occurrence_time", "2026-11-09 14:30:20");
+        values.put("host_name", "ms-service-job-b48c548cf-9bn22");
+        values.put("error_info", "Read timed out");
         values.put("message", "卡片 2.0 结构活体验证");
-        values.put("stack_info", "com.example.DemoException: live send test\n\tat Demo.main(Demo.java:42)");
+        values.put("stack_info", "com.example.DemoException: live send test\n\tat Demo.main(Demo.java:42)\n\tat java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)");
+        values.put("zipkin_url", "https://zipkin.example.com/trace/abc123");
         sender.send(values);
     }
 }

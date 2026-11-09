@@ -17,7 +17,7 @@ import java.util.Map;
 
 /**
  * 飞书卡片消息发送器，基于 Lark SDK 发送交互式卡片消息。
- * 卡片包含标题、异常类型、告警级别、堆栈信息（可折叠）、自定义消息、链路追踪等模块。
+ * 卡片布局：固定字段 2 列 grid + 通栏，可选条件展示堆栈/自定义/链路模块。
  *
  * @author sunhaipeng
  */
@@ -38,19 +38,40 @@ public class FeishuCardSender implements AlarmSender {
         this.receiveId = config.getFeishuReceiveId();
     }
 
-    /** 发送卡片消息：获取模板 -> 动态添加模块 -> 占位符替换 -> 调用 SDK 发送 */
     @Override
     public void send(Map<String, String> values) throws Exception {
         CardMessage cardMessage = getCardMessageTemplate();
 
+        List<Object> elements = cardMessage.getCard().getBody().getElements();
+
+        elements.add(buildTwoColumnSet(
+                buildInfoTile("异常类型", "${exception_type}", "purple"),
+                buildInfoTile("报警级别", "${alarm_level}", "carmine")));
+
+        elements.add(buildDivider());
+
+        elements.add(buildTwoColumnSet(
+                buildInfoTile("发生时间", "${occurrence_time}", "orange"),
+                buildInfoTile("主机名称", "${host_name}", "carmine")));
+
+        elements.add(buildDivider());
+
+        elements.add(buildSingleColumnSet(
+                buildInfoTile("错误信息", "${error_info}", "carmine")));
+
         if (values.get("stack_info") != null) {
-            cardMessage.getCard().getBody().getElements().add(buildStackInfoColumnSet());
+            elements.add(buildDivider());
+            elements.add(buildStackInfoColumnSet());
         }
         if (values.get("message") != null) {
-            cardMessage.getCard().getBody().getElements().add(buildMessageColumnSet());
+            elements.add(buildDivider());
+            elements.add(buildSingleColumnSet(
+                    buildInfoTile("自定义消息", "${message}", "carmine")));
         }
         if (values.get("zipkin_url") != null) {
-            cardMessage.getCard().getBody().getElements().add(buildZipkinUrlColumnSet());
+            elements.add(buildDivider());
+            elements.add(buildSingleColumnSet(
+                    buildInfoTile("链路查看", "${zipkin_url}", "orange")));
         }
 
         String content = TemplateReplacer.replacePlaceholders(
@@ -74,7 +95,6 @@ public class FeishuCardSender implements AlarmSender {
         }
     }
 
-    /** 返回卡片模板：蓝色标题栏 + 警铃图标 + 空 body */
     @Override
     public CardMessage getCardMessageTemplate() {
         CardMessage cardMessage = new CardMessage();
@@ -82,37 +102,61 @@ public class FeishuCardSender implements AlarmSender {
         CardMessage.Card card = new CardMessage.Card();
 
         CardMessage.Header header = new CardMessage.Header();
+        header.setTemplate("red");
         header.setTitle(new CardMessage.Title("系统异常报警通知"));
         header.setIcon(new CardMessage.Icon());
         header.getIcon().setToken("alarm_outlined");
         card.setHeader(header);
 
-        CardMessage.Body body = new CardMessage.Body();
-        card.setBody(body);
+        card.setBody(new CardMessage.Body());
 
         cardMessage.setCard(card);
         return cardMessage;
     }
 
-    /** 构建堆栈信息模块：可折叠面板，背景橙色，默认折叠 */
-    private CardMessage.ColumnSet buildStackInfoColumnSet() {
-        CardMessage.ColumnSet columnSet = new CardMessage.ColumnSet();
-
+    private CardMessage.Column buildInfoTile(String title, String value, String titleColor) {
         CardMessage.Column column = new CardMessage.Column();
-        column.setBackgroundStyle("orange-50");
 
-        List<Object> elements = new ArrayList<>();
+        CardMessage.MarkdownElement titleElement = new CardMessage.MarkdownElement();
+        titleElement.setContent("**<font color='" + titleColor + "'>【" + title + "】</font>**");
+
+        CardMessage.MarkdownElement valueElement = new CardMessage.MarkdownElement();
+        valueElement.setContent(value);
+
+        column.getElements().add(titleElement);
+        column.getElements().add(valueElement);
+        return column;
+    }
+
+    private CardMessage.MarkdownElement buildDivider() {
+        CardMessage.MarkdownElement divider = new CardMessage.MarkdownElement();
+        divider.setContent("<hr>");
+        return divider;
+    }
+
+    private CardMessage.ColumnSet buildTwoColumnSet(CardMessage.Column left, CardMessage.Column right) {
+        CardMessage.ColumnSet cs = new CardMessage.ColumnSet();
+        cs.getColumns().add(left);
+        cs.getColumns().add(right);
+        return cs;
+    }
+
+    private CardMessage.ColumnSet buildSingleColumnSet(CardMessage.Column col) {
+        CardMessage.ColumnSet cs = new CardMessage.ColumnSet();
+        cs.getColumns().add(col);
+        return cs;
+    }
+
+    private CardMessage.ColumnSet buildStackInfoColumnSet() {
+        CardMessage.Column column = new CardMessage.Column();
 
         CardMessage.MarkdownElement titleElement = new CardMessage.MarkdownElement();
         titleElement.setContent("**<font color='orange'>【堆栈信息】</font>**");
-        elements.add(titleElement);
+        column.getElements().add(titleElement);
 
         CardMessage.MarkdownElement collapsiblePanel = new CardMessage.MarkdownElement();
         collapsiblePanel.setTag("collapsible_panel");
-        collapsiblePanel.setTextSize(null);
         collapsiblePanel.setExpanded(false);
-        collapsiblePanel.setVerticalSpacing("8px");
-        collapsiblePanel.setPadding("8px 8px 8px 8px");
 
         CardMessage.MarkdownElementHeader panelHeader = new CardMessage.MarkdownElementHeader();
         CardMessage.Title panelTitle = new CardMessage.Title();
@@ -126,82 +170,21 @@ public class FeishuCardSender implements AlarmSender {
         CardMessage.MarkdownElementIcon panelIcon = new CardMessage.MarkdownElementIcon();
         panelIcon.setTag("standard_icon");
         panelIcon.setToken("down-small-ccm_outlined");
-        panelIcon.setColor("");
         panelIcon.setSize("16px 16px");
         panelHeader.setIcon(panelIcon);
-
         collapsiblePanel.setHeader(panelHeader);
 
-        CardMessage.MarkdownElementBorder border = new CardMessage.MarkdownElementBorder();
-        border.setColor("grey");
-        border.setCornerRadius("5px");
-        collapsiblePanel.setBorder(border);
-
         List<CardMessage.MarkdownElementColumn> panelElements = new ArrayList<>();
-        CardMessage.MarkdownElementColumn columnContent = new CardMessage.MarkdownElementColumn();
-        columnContent.setTag("markdown");
-        columnContent.setContent("${stack_info}");
-        panelElements.add(columnContent);
+        CardMessage.MarkdownElementColumn colContent = new CardMessage.MarkdownElementColumn();
+        colContent.setTag("markdown");
+        colContent.setContent("${stack_info}");
+        panelElements.add(colContent);
         collapsiblePanel.setElements(panelElements);
 
-        elements.add(collapsiblePanel);
+        column.getElements().add(collapsiblePanel);
 
-        CardMessage.MarkdownElement spacer = new CardMessage.MarkdownElement();
-        spacer.setTextAlign("left");
-        spacer.setContent("");
-        elements.add(spacer);
-
-        column.setElements(elements);
-        columnSet.getColumns().add(column);
-
-        return columnSet;
-    }
-
-    /** 构建自定义消息模块，背景红色 */
-    private CardMessage.ColumnSet buildMessageColumnSet() {
-        CardMessage.ColumnSet columnSet = new CardMessage.ColumnSet();
-
-        CardMessage.Column column = new CardMessage.Column();
-        column.setBackgroundStyle("carmine-50");
-
-        List<Object> elements = new ArrayList<>();
-
-        CardMessage.MarkdownElement titleElement = new CardMessage.MarkdownElement();
-        titleElement.setContent("**<font color='carmine'>【自定义消息】</font>**");
-        elements.add(titleElement);
-
-        CardMessage.MarkdownElement contentElement = new CardMessage.MarkdownElement();
-        contentElement.setTextAlign("left");
-        contentElement.setContent("${message}");
-        elements.add(contentElement);
-
-        column.setElements(elements);
-        columnSet.getColumns().add(column);
-
-        return columnSet;
-    }
-
-    /** 构建链路追踪模块，背景橙色 */
-    private CardMessage.ColumnSet buildZipkinUrlColumnSet() {
-        CardMessage.ColumnSet columnSet = new CardMessage.ColumnSet();
-
-        CardMessage.Column column = new CardMessage.Column();
-        column.setBackgroundStyle("orange-50");
-
-        List<Object> elements = new ArrayList<>();
-
-        CardMessage.MarkdownElement titleElement = new CardMessage.MarkdownElement();
-        titleElement.setContent("**<font color='orange'>【链路查看】</font>**");
-        elements.add(titleElement);
-
-        CardMessage.MarkdownElement contentElement = new CardMessage.MarkdownElement();
-        contentElement.setTextAlign("left");
-        contentElement.setContent("${zipkin_url}");
-        elements.add(contentElement);
-
-        column.setElements(elements);
-        columnSet.getColumns().add(column);
-
-        return columnSet;
+        CardMessage.ColumnSet cs = new CardMessage.ColumnSet();
+        cs.getColumns().add(column);
+        return cs;
     }
 }
